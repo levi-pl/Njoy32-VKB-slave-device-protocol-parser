@@ -4,3 +4,6 @@ A simple sniffer and parser for messages sent between controller and slave devic
 # Hardware required
 Of course it requires U(S)ART to USB bridge operating at 3.3V TTL levels and capable of achieving 500kbps speeds. 
 ![USB to UART TTL bridge](img/usb-ttl-uart.jpeg)
+
+# Building project
+I'ts a simple Go program. All you need to do (and it works on any OS) is to download [go toolkit](https://go.dev/doc/install) and run "go build" command inside src directory.
