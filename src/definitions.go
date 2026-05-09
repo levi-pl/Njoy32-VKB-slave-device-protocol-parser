@@ -7,8 +7,9 @@ import (
 
 type (
 	Njoy32MessageDescriptor struct {
-		Size int
-		Name string
+		Size         int
+		ExtendedSize bool
+		Name         string
 	}
 
 	Njoy32DeviceDescriptor struct {
@@ -36,6 +37,7 @@ type (
 	Njoy32Message struct {
 		Response bool
 		Known    bool
+		Extended bool
 		Size     Njoy32Size
 		Type     Njoy32MessageType
 		Device   Njoy32Device
@@ -61,6 +63,7 @@ const (
 	StateType1
 	StateType2
 	StateData
+	StateExtendedData
 	colourRed           = "\033[31m"
 	colourGreen         = "\033[32m"
 	colourYellow        = "\033[33m"
@@ -98,19 +101,19 @@ func compareSlices(first []byte, second []byte) bool {
 */
 
 var vkbMessages = map[int]Njoy32MessageDescriptor{
-	0x015d: {3 + 12, "THQ3r"}, // response from GNX-THQ-3 with 12 bytes of data, 3 bytes header
-	0x013d: {3 + 12, "THQ1r"}, // response from GNX-THQ-1 with 12 bytes of data, 3 bytes header
-	0x010d: {3 + 12, "THQ2r"}, // response from GNX-THQ-2 with 12 bytes of data, 3 bytes header
 
-	0x0139: {3 + 13, "FSMGAr"}, // response from FSM-GA with 13 bytes of data, 3 bytes header
+	0x013d: {5 + 10, true, "THQ1r"}, // can be 5 bytes longer !!!
+	0x010d: {5 + 10, true, "THQ2r"}, // can be 5 bytes longer !!!
+	0x015d: {5 + 10, true, "THQ3r"}, // can be 5 bytes longer !!!
+	0x0139: {5 + 11, false, "FSMGAr"},
 
-	0xc805: {3 + 6, "THQr"},            //
-	0xc80c: {3 + 18, "THQr AXE+BUT"},   // command to GNX-THQ to send axis and button data, 3 bytes header, 18 bytes payload
-	0xc809: {3 + 15, "FSMGAr ENC"},     // response from FSM-GA with encoder data, 3 bytes header, 15 bytes payload
-	0xc80d: {3 + 19, "FSM-GA BUT+ENC"}, // response from FSM-GA with button and encoder data, 3 bytes header, 19 bytes payload
+	0xc805: {5 + 4, true, "THQr"},          // can be 5 bytes longer !!!
+	0xc80c: {5 + 16, true, "THQr AXE+BUT"}, // can be 5 bytes longer !!!
+	0xc809: {5 + 13, true, "FSMGAr ENC"},
+	0xc80d: {5 + 17, false, "FSM-GA BUT+ENC"},
 
-	0x9800: {6 + 6, "THQq"},    // command to GNX-THQ to send 6 bytes of data, 6 bytes header
-	0x9831: {6 + 55, "FSMGAq"}, // command to FSM-GA to send 55 bytes of data, 6 bytes header
+	0x9800: {8 + 4, true, "THQq"},
+	0x9831: {8 + 53, false, "FSMGAq"},
 }
 
 var vkbDevices = map[int]Njoy32DeviceDescriptor{
