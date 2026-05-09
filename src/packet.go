@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 
 	"go.bug.st/serial"
@@ -30,6 +31,8 @@ func serialStateMachine(serialPort *serial.Port, readChan chan Njoy32Message, wg
 					nJoy32RawPacket = nil
 					nJoy32RawPacket = append(nJoy32RawPacket, value)
 					state = StateSOP
+				} else {
+					fmt.Println(colourRed + "[err] Expected start of packet, got " + fmt.Sprintf("%02X", value) + colourReset)
 				}
 			case StateSOP:
 				if value == syncByte {
@@ -82,11 +85,9 @@ func serialStateMachine(serialPort *serial.Port, readChan chan Njoy32Message, wg
 				if ok {
 					packetLength = entry.Size
 					knownPacket = true
-					//fmt.Println("Known packet " + entry.Name)
 				} else {
 					packetLength = maxPacketLength
 					knownPacket = false
-					//fmt.Println("Unknown packet")
 				}
 				state = StateData
 				nJoy32RawPacket = append(nJoy32RawPacket, value)
@@ -117,10 +118,12 @@ func serialStateMachine(serialPort *serial.Port, readChan chan Njoy32Message, wg
 						nJoy32RawPacket = append(nJoy32RawPacket, value)
 						state = StateSOP
 					} else {
+						fmt.Println(colourRed + "[err] Expected start of packet, got " + fmt.Sprintf("%02X", value) + colourReset)
 						state = StateUndefined
 					}
 				case len(nJoy32RawPacket) > packetLength && knownPacket:
 					// packet too long !!! start over
+					fmt.Println(colourRed + "[err] Packet too long, expected " + fmt.Sprintf("%d", packetLength) + " got " + fmt.Sprintf("%02X", len(nJoy32RawPacket)) + colourReset)
 					packetLength = 0
 					nJoy32RawPacket = nil
 					state = StateUndefined
@@ -138,40 +141,42 @@ func processPacket(queue chan RawPacket, output chan Njoy32Message) {
 	//calculateVariousChecksums((*packet))
 	for rawMessage := range queue {
 		var deviceByte int
-		var response Njoy32Message
+		var processedMessage Njoy32Message
 		if (rawMessage.Data)[1] == syncByte {
-			response.Response = false
+			processedMessage.Response = false
 			deviceByte = 4
 		} else {
-			response.Response = true
+			processedMessage.Response = true
 			deviceByte = 1
 		}
-		response.RawData = (rawMessage.Data)[deviceByte:]
-		response.Size.Header = deviceByte
-		response.Size.Payload = len((rawMessage.Data)) - deviceByte
-		response.Type.Command = int((rawMessage.Data)[deviceByte+2])
-		response.Type.SubCommand = int((rawMessage.Data)[deviceByte+3])
-		response.Known = rawMessage.Known
+		processedMessage.RawData = (rawMessage.Data)[deviceByte:]
+		processedMessage.Size.Header = deviceByte + 4
+		processedMessage.Size.Payload = len((rawMessage.Data)) - processedMessage.Size.Header
+		processedMessage.Type.Command = int((rawMessage.Data)[deviceByte+2])
+		processedMessage.Type.SubCommand = int((rawMessage.Data)[deviceByte+3])
+		processedMessage.Known = rawMessage.Known
 
 		switch (rawMessage.Data)[deviceByte] {
 		case 24:
-			response.Device = Njoy32Device{"GNX-THQ", 1}
+			processedMessage.Device = Njoy32Device{"GNX-THQ", 1}
 		case 25:
-			response.Device = Njoy32Device{"GNX-THQ", 2}
+			processedMessage.Device = Njoy32Device{"GNX-THQ", 2}
 		case 26:
-			response.Device = Njoy32Device{"GNX-THQ", 3}
+			processedMessage.Device = Njoy32Device{"GNX-THQ", 3}
 		case 27:
-			response.Device = Njoy32Device{"GNX-THQ", 4}
+			processedMessage.Device = Njoy32Device{"GNX-THQ", 4}
 		case 32:
-			response.Device = Njoy32Device{"FSM-GA", 1}
+			processedMessage.Device = Njoy32Device{"FSM-GA", 1}
 		case 33:
-			response.Device = Njoy32Device{"FSM-GA", 2}
+			processedMessage.Device = Njoy32Device{"FSM-GA", 2}
 		case 34:
-			response.Device = Njoy32Device{"FSM-GA", 3}
+			processedMessage.Device = Njoy32Device{"FSM-GA", 3}
 		case 35:
-			response.Device = Njoy32Device{"FSM-GA", 4}
+			processedMessage.Device = Njoy32Device{"FSM-GA", 4}
+		default:
+			processedMessage.Device = Njoy32Device{"UNKNOWN[" + string((rawMessage.Data)[deviceByte]) + "]", 1}
 		}
-		output <- response
+		output <- processedMessage
 	}
 
 }

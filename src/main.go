@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"go.bug.st/serial"
@@ -28,14 +29,14 @@ func main() {
 		serialPortRoutines.Go(func() { serialStateMachine(&vkbSnifferSerialPort, serialPacketIn, serialPortRoutines) })
 
 		go func() {
-			//logFile, err := os.Create("joystick_v2_" + time.Now().Format(time.RFC3339) + ".log")
-			//check(err)
-			//defer logFile.Close()
+			logFile, err := os.Create("joystick_v2_" + time.Now().Format(time.RFC3339) + ".log")
+			check(err)
+			defer logFile.Close()
 			for msg := range serialPacketIn {
 				if msg.Response {
-					displayPacket(&msg)
+					displayMessage(&msg, logFile)
 				} else {
-					displayPacket(&msg)
+					displayMessage(&msg, logFile)
 				}
 			}
 		}()

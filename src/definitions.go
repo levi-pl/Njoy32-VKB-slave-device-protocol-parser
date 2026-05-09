@@ -60,6 +60,9 @@ const (
 	StateType1
 	StateType2
 	StateData
+	colourRed   = "\033[31m"
+	colourGreen = "\033[32m"
+	colourReset = "\033[0m"
 )
 
 /*
@@ -79,18 +82,18 @@ func compareSlices(first []byte, second []byte) bool {
 */
 
 var vkbMessages = map[int]Njoy32MessageDescriptor{
-	0x015d: {3 + 11, "GNX-THQ-3 response"},
-	0x013d: {3 + 11, "GNX-THQ-1 response"},
-	0x010d: {3 + 11, "GNX-THQ-2 response"},
+	0x015d: {3 + 12, "GNX-THQ-3 response"},
+	0x013d: {3 + 12, "GNX-THQ-1 response"},
+	0x010d: {3 + 12, "GNX-THQ-2 response"},
 
-	0x0139: {3 + 12, "FSM-GA response of some sort"},
+	0x0139: {3 + 13, "FSM-GA response of some sort"},
 
-	0xc80c: {3 + 17, "GNX-THQ response with axes and buttons"},
-	0xc809: {3 + 14, "FSM-GA response with encoders"},
-	0xc80d: {3 + 18, "FSM-GA response with buttons and encoders"},
+	0xc80c: {3 + 18, "GNX-THQ response with axes and buttons"},
+	0xc809: {3 + 15, "FSM-GA response with encoders"},
+	0xc80d: {3 + 19, "FSM-GA response with buttons and encoders"},
 
-	0x9800: {6 + 5, "query to GNX-THQ"},
-	0x9831: {6 + 54, "some config message to FSM-GA"},
+	0x9800: {6 + 6, "query to GNX-THQ"},
+	0x9831: {6 + 55, "some config message to FSM-GA"},
 }
 
 var vkbDevices = map[int]Njoy32DeviceDescriptor{

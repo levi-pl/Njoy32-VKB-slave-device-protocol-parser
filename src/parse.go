@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
-func displayPacket(packet *Njoy32Message) {
+func displayMessage(packet *Njoy32Message, file *os.File) {
 	logEntry := time.Now().Format("15:04:05.000") + " "
 	if packet.Response {
 		logEntry += "<="
@@ -13,8 +14,8 @@ func displayPacket(packet *Njoy32Message) {
 		logEntry += "=>"
 	}
 	logEntry += fmt.Sprintf(" %s-%d ", packet.Device.Model, packet.Device.Index) +
-		fmt.Sprintf("(h=%02d)(p=%02d)", packet.Size.Header, packet.Size.Payload) +
-		"{T=" + fmt.Sprintf("%02X,%02X}", packet.Type.Command, packet.Type.SubCommand)
+		fmt.Sprintf("(%02d,%02d)", packet.Size.Header, packet.Size.Payload) +
+		fmt.Sprintf("{%02X,%02X}", packet.Type.Command, packet.Type.SubCommand)
 	if !packet.Known {
 		logEntry += "(UNK)"
 	}
@@ -70,4 +71,5 @@ func displayPacket(packet *Njoy32Message) {
 		}
 	}
 	fmt.Println(logEntry)
+	fmt.Fprintln(file, logEntry)
 }
