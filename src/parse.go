@@ -9,67 +9,53 @@ import (
 func displayMessage(packet *Njoy32Message, file *os.File) {
 	logEntry := time.Now().Format("15:04:05.000") + " "
 	if packet.Response {
-		logEntry += "<="
+		logEntry += colourBrightYellow + "<=" + colourReset
 	} else {
-		logEntry += "=>"
+		logEntry += colourCyan + "=>" + colourReset
 	}
-	logEntry += fmt.Sprintf(" %s-%d ", packet.Device.Model, packet.Device.Index) +
-		fmt.Sprintf("(%02d,%02d)", packet.Size.Header, packet.Size.Payload) +
-		fmt.Sprintf("{%02X,%02X}", packet.Type.Command, packet.Type.SubCommand)
+	logEntry += colourBold + fmt.Sprintf(" %s-%d ", vkbDevices[int(packet.Device.ModelID)].Model, packet.Device.Index) + colourBrightBlue +
+		fmt.Sprintf("(%02d,%02d)", packet.Size.Header, packet.Size.Payload) + colourBrightYellow +
+		fmt.Sprintf("{%02X,%02X}", packet.Type.Command, packet.Type.SubCommand) + colourReset
+
 	if !packet.Known {
-		logEntry += "(UNK)"
-	}
-	if packet.Response {
-		logEntry += fmt.Sprintf("[% 2X]", packet.RawData[4:9])
-		logEntry += fmt.Sprintf("[% 2X]", packet.RawData[9:11])
-	}
-	switch packet.Device.Model {
-	case "FSM-GA":
+		logEntry += colourBrightWhite + "(UNK)" + colourReset + fmt.Sprintf("[% 2X]", packet.RawData)
+	} else {
+		logEntry += colourBrightGreen + "(" + vkbMessages[int(packet.Type.Command)*0x100+int(packet.Type.SubCommand)].Name + ")" + colourReset
+		//switch packet.Device.Model {
+		//case "FSM-GA":
 		switch packet.Type.Command {
-		case 0xc8:
+		case 0xc8: // reports
+			logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:5])
+			logEntry += fmt.Sprintf("[% 2X]", packet.RawData[5:7])
 			switch packet.Type.SubCommand {
 			case 0xd: // FSM-GA buttons and encoders
-				logEntry += fmt.Sprintf("BUTTONS:%08b", packet.RawData[11:15]) +
-					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[15:17]) +
-					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[17:19]) +
-					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[19:21])
-			case 0x09: // FSM-GA encoders
-				logEntry += fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[11:13]) +
+				logEntry += fmt.Sprintf("BUTTONS:%08b", packet.RawData[7:11]) +
+					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[11:13]) +
 					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[13:15]) +
 					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[15:17])
+			case 0x09: // FSM-GA encoders
+				logEntry += fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[7:9]) +
+					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[9:11]) +
+					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[11:13])
+			case 0x0c: // THQ axis and buttons
+				logEntry += fmt.Sprintf("AXIS:[% 2X]", packet.RawData[7:9]) +
+					fmt.Sprintf("AXIS:[% 2X]", packet.RawData[9:11]) +
+					fmt.Sprintf("AXIS:[% 2X]", packet.RawData[11:13]) +
+					fmt.Sprintf("BUTTONS:%08b", packet.RawData[13:15])
 			default:
-				if len(packet.RawData) > 11 {
-					logEntry += fmt.Sprintf("[% 2X]", packet.RawData[11:len(packet.RawData)-1])
-				}
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData)
 			}
-		case 0x98:
-			logEntry += fmt.Sprintf("[% 2X]", packet.RawData[4:len(packet.RawData)-1])
-			// 0x00 (5 bytes), 0x31 (54 bytes)
-		default:
-			if len(packet.RawData) > 11 {
-				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[11:len(packet.RawData)-1])
-			}
-		}
-	case "GNX-THQ":
-		switch packet.Type.Command {
-		case 0xc8:
+		case 0x98: // requests
 			switch packet.Type.SubCommand {
-			case 0x0c:
-				logEntry += fmt.Sprintf("AXIS:[% 2X]", packet.RawData[11:13]) +
-					fmt.Sprintf("AXIS:[% 2X]", packet.RawData[13:15]) +
-					fmt.Sprintf("AXIS:[% 2X]", packet.RawData[15:17]) +
-					fmt.Sprintf("BUTTONS:%08b", packet.RawData[17:19])
 			default:
-				if len(packet.RawData) > 11 {
-					logEntry += fmt.Sprintf("[% 2X]", packet.RawData[11:len(packet.RawData)-1])
-				}
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData)
 			}
 		default:
-			if len(packet.RawData) > 11 {
-				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[11:len(packet.RawData)-1])
-			}
+			logEntry += fmt.Sprintf("[% 2X]", packet.RawData)
 		}
+		//}
 	}
+
 	fmt.Println(logEntry)
 	fmt.Fprintln(file, logEntry)
 }

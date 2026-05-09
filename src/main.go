@@ -33,11 +33,7 @@ func main() {
 			check(err)
 			defer logFile.Close()
 			for msg := range serialPacketIn {
-				if msg.Response {
-					displayMessage(&msg, logFile)
-				} else {
-					displayMessage(&msg, logFile)
-				}
+				displayMessage(&msg, logFile)
 			}
 		}()
 

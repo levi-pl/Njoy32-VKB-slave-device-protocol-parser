@@ -48,9 +48,11 @@ func serialStateMachine(serialPort *serial.Port, readChan chan Njoy32Message, wg
 				} else {
 					nJoy32RawPacket = nil
 					if value == startOfPacket {
+						fmt.Println(colourRed + "[err] Expected sync byte, got start of packet, Starting new packet" + colourReset)
 						nJoy32RawPacket = append(nJoy32RawPacket, value)
 						state = StateSOP
 					} else {
+						fmt.Println(colourRed + "[err] Expected sync byte, got " + fmt.Sprintf("%02X", value) + colourReset)
 						state = StateUndefined
 					}
 				}
@@ -149,32 +151,32 @@ func processPacket(queue chan RawPacket, output chan Njoy32Message) {
 			processedMessage.Response = true
 			deviceByte = 1
 		}
-		processedMessage.RawData = (rawMessage.Data)[deviceByte:]
+		processedMessage.RawData = (rawMessage.Data)[deviceByte+4:]
 		processedMessage.Size.Header = deviceByte + 4
 		processedMessage.Size.Payload = len((rawMessage.Data)) - processedMessage.Size.Header
-		processedMessage.Type.Command = int((rawMessage.Data)[deviceByte+2])
-		processedMessage.Type.SubCommand = int((rawMessage.Data)[deviceByte+3])
+		processedMessage.Type.Command = (rawMessage.Data)[deviceByte+2]
+		processedMessage.Type.SubCommand = (rawMessage.Data)[deviceByte+3]
 		processedMessage.Known = rawMessage.Known
 
 		switch (rawMessage.Data)[deviceByte] {
 		case 24:
-			processedMessage.Device = Njoy32Device{"GNX-THQ", 1}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 24, 1}
 		case 25:
-			processedMessage.Device = Njoy32Device{"GNX-THQ", 2}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 24, 2}
 		case 26:
-			processedMessage.Device = Njoy32Device{"GNX-THQ", 3}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 24, 3}
 		case 27:
-			processedMessage.Device = Njoy32Device{"GNX-THQ", 4}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 24, 4}
 		case 32:
-			processedMessage.Device = Njoy32Device{"FSM-GA", 1}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 32, 1}
 		case 33:
-			processedMessage.Device = Njoy32Device{"FSM-GA", 2}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 32, 2}
 		case 34:
-			processedMessage.Device = Njoy32Device{"FSM-GA", 3}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 32, 3}
 		case 35:
-			processedMessage.Device = Njoy32Device{"FSM-GA", 4}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], 32, 4}
 		default:
-			processedMessage.Device = Njoy32Device{"UNKNOWN[" + string((rawMessage.Data)[deviceByte]) + "]", 1}
+			processedMessage.Device = Njoy32Device{(rawMessage.Data)[deviceByte+1], (rawMessage.Data)[deviceByte], 0}
 		}
 		output <- processedMessage
 	}

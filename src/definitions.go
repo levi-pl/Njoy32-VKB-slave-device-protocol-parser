@@ -19,8 +19,9 @@ type (
 	}
 
 	Njoy32Device struct {
-		Model string
-		Index uint8
+		ManufacturerID uint8
+		ModelID        uint8
+		Index          uint8
 	}
 
 	Njoy32Size struct {
@@ -28,8 +29,8 @@ type (
 		Payload int
 	}
 	Njoy32MessageType struct {
-		Command    int
-		SubCommand int
+		Command    uint8
+		SubCommand uint8
 	}
 
 	Njoy32Message struct {
@@ -45,7 +46,7 @@ type (
 )
 
 const (
-	maxPacketLength = 64
+	maxPacketLength = 100
 	startOfPacket   = 0x5A
 	syncByte        = 0xAA
 	endPreamble     = 0xA5
@@ -60,9 +61,24 @@ const (
 	StateType1
 	StateType2
 	StateData
-	colourRed   = "\033[31m"
-	colourGreen = "\033[32m"
-	colourReset = "\033[0m"
+	colourRed           = "\033[31m"
+	colourGreen         = "\033[32m"
+	colourYellow        = "\033[33m"
+	colourBlue          = "\033[34m"
+	colourMagenta       = "\033[35m"
+	colourCyan          = "\033[36m"
+	colourWhite         = "\033[37m"
+	colourBold          = "\033[1m"
+	colourUnderline     = "\033[4m"
+	colourReverse       = "\033[7m"
+	colourBrightRed     = "\033[91m"
+	colourBrightGreen   = "\033[92m"
+	colourBrightYellow  = "\033[93m"
+	colourBrightBlue    = "\033[94m"
+	colourBrightMagenta = "\033[95m"
+	colourBrightCyan    = "\033[96m"
+	colourBrightWhite   = "\033[97m"
+	colourReset         = "\033[0m"
 )
 
 /*
@@ -82,18 +98,19 @@ func compareSlices(first []byte, second []byte) bool {
 */
 
 var vkbMessages = map[int]Njoy32MessageDescriptor{
-	0x015d: {3 + 12, "GNX-THQ-3 response"},
-	0x013d: {3 + 12, "GNX-THQ-1 response"},
-	0x010d: {3 + 12, "GNX-THQ-2 response"},
+	0x015d: {3 + 12, "THQ3r"}, // response from GNX-THQ-3 with 12 bytes of data, 3 bytes header
+	0x013d: {3 + 12, "THQ1r"}, // response from GNX-THQ-1 with 12 bytes of data, 3 bytes header
+	0x010d: {3 + 12, "THQ2r"}, // response from GNX-THQ-2 with 12 bytes of data, 3 bytes header
 
-	0x0139: {3 + 13, "FSM-GA response of some sort"},
+	0x0139: {3 + 13, "FSMGAr"}, // response from FSM-GA with 13 bytes of data, 3 bytes header
 
-	0xc80c: {3 + 18, "GNX-THQ response with axes and buttons"},
-	0xc809: {3 + 15, "FSM-GA response with encoders"},
-	0xc80d: {3 + 19, "FSM-GA response with buttons and encoders"},
+	0xc805: {3 + 6, "THQr"},            //
+	0xc80c: {3 + 18, "THQr AXE+BUT"},   // command to GNX-THQ to send axis and button data, 3 bytes header, 18 bytes payload
+	0xc809: {3 + 15, "FSMGAr ENC"},     // response from FSM-GA with encoder data, 3 bytes header, 15 bytes payload
+	0xc80d: {3 + 19, "FSM-GA BUT+ENC"}, // response from FSM-GA with button and encoder data, 3 bytes header, 19 bytes payload
 
-	0x9800: {6 + 6, "query to GNX-THQ"},
-	0x9831: {6 + 55, "some config message to FSM-GA"},
+	0x9800: {6 + 6, "THQq"},    // command to GNX-THQ to send 6 bytes of data, 6 bytes header
+	0x9831: {6 + 55, "FSMGAq"}, // command to FSM-GA to send 55 bytes of data, 6 bytes header
 }
 
 var vkbDevices = map[int]Njoy32DeviceDescriptor{
