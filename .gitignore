@@ -33,3 +33,4 @@ go.work.sum
 
 src/vkbSniffer
 *.log
+.DS_Store
