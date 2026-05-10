@@ -7,6 +7,7 @@ import (
 )
 
 func displayMessage(packet *Njoy32Message, file *os.File) {
+	rc4Crypt(packet.RawData, &RC4Sbox)
 	baseLength := vkbMessages[int(packet.Type.Command)*0x100+int(packet.Type.SubCommand)].Size - 5
 	if !packet.Response {
 		baseLength -= 3
@@ -37,12 +38,24 @@ func displayMessage(packet *Njoy32Message, file *os.File) {
 				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:11])
 				if packet.Extended && len(packet.RawData) > baseLength {
 					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[11:]) + colourReset
-					// Extended data can be present in some cases, for example when the device is in a special mode, but its content is currently unknown
-					// It seems to be present in some THQ reports as well, but it's not clear yet how to correlate it with specific subcommands or conditions
-					// It can be up to 5 bytes long, but the actual length and structure of this extended data is still unknown and may require further investigation
+				}
+			case 0x39:
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				if packet.Extended && len(packet.RawData) > baseLength {
+					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
 				}
 			default:
-				logEntry += "(unknown " + fmt.Sprintf("%02X", packet.Type.SubCommand) + " subcommand)" + fmt.Sprintf("[% 2X]", packet.RawData)
+				logEntry += colourRed + "(unknown " + fmt.Sprintf("%02X", packet.Type.SubCommand) + " subcommand)" + fmt.Sprintf("[% 2X]", packet.RawData) + colourReset
+			}
+		case 0xa5:
+			switch packet.Type.SubCommand {
+			case 0x20:
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				if packet.Extended && len(packet.RawData) > baseLength {
+					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
+				}
+			default:
+				logEntry += colourRed + "(unknown " + fmt.Sprintf("%02X", packet.Type.SubCommand) + " subcommand)" + fmt.Sprintf("[% 2X]", packet.RawData) + colourReset
 			}
 		case 0xc8: // reports
 			logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:5])
@@ -55,9 +68,6 @@ func displayMessage(packet *Njoy32Message, file *os.File) {
 					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[15:17])
 				if packet.Extended && len(packet.RawData) > baseLength {
 					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[17:]) + colourReset
-					// Extended data can be present in some cases, for example when the device is in a special mode, but its content is currently unknown
-					// It seems to be present in some THQ reports as well, but it's not clear yet how to correlate it with specific subcommands or conditions
-					// It can be up to 5 bytes long, but the actual length and structure of this extended data is still unknown and may require further investigation
 				}
 			case 0x09: // FSM-GA encoders
 				logEntry += fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[7:9]) +
@@ -65,38 +75,54 @@ func displayMessage(packet *Njoy32Message, file *os.File) {
 					fmt.Sprintf("ENCODER:[% 2X]", packet.RawData[11:13])
 				if packet.Extended && len(packet.RawData) > baseLength {
 					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[13:]) + colourReset
-					// Extended data can be present in some cases, for example when the device is in a special mode, but its content is currently unknown
-					// It seems to be present in some THQ reports as well, but it's not clear yet how to correlate it with specific subcommands or conditions
-					// It can be up to 5 bytes long, but the actual length and structure of this extended data is still unknown and may require further investigation
 				}
 			case 0x0c: // THQ axis and buttons
-				packet.RawData[10] = packet.RawData[10] ^ 0x45 // some kind of simple obfuscation, not sure yet if it's always the same or if it can vary, but it seems to be present in all FSM-GA reports
+				//packet.RawData[10] = packet.RawData[10] ^ 0x45
 				logEntry += fmt.Sprintf("AXIS:[% 2X]", packet.RawData[7:9]) +
 					fmt.Sprintf("AXIS:[% 2X]", packet.RawData[9:11]) +
 					fmt.Sprintf("AXIS:[% 2X]", packet.RawData[11:13]) +
 					fmt.Sprintf("BUTTONS:%08b", packet.RawData[13:15])
 				if packet.Extended && len(packet.RawData) > baseLength {
 					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[15:]) + colourReset
-					// Extended data can be present in some cases, for example when the device is in a special mode, but its content is currently unknown
-					// It seems to be present in some THQ reports as well, but it's not clear yet how to correlate it with specific subcommands or conditions
-					// It can be up to 5 bytes long, but the actual length and structure of this extended data is still unknown and may require further investigation
 				}
 			default:
-				logEntry += "(unknown " + fmt.Sprintf("%02X", packet.Type.SubCommand) + " subcommand)" + fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				logEntry += colourRed + "(unknown " + fmt.Sprintf("%02X", packet.Type.SubCommand) + " subcommand)" + fmt.Sprintf("[% 2X]", packet.RawData[:baseLength]) + colourReset
 				if packet.Extended && len(packet.RawData) > baseLength {
 					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
-					// Extended data can be present in some cases, for example when the device is in a special mode, but its content is currently unknown
-					// It seems to be present in some THQ reports as well, but it's not clear yet how to correlate it with specific subcommands or conditions
-					// It can be up to 5 bytes long, but the actual length and structure of this extended data is still unknown and may require further investigation
 				}
 			}
 		case 0x98: // requests
 			switch packet.Type.SubCommand {
+			case 0x00:
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				if packet.Extended && len(packet.RawData) > baseLength {
+					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
+				}
+			case 0x05:
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				if packet.Extended && len(packet.RawData) > baseLength {
+					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
+				}
+			case 0x09:
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				if packet.Extended && len(packet.RawData) > baseLength {
+					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
+				}
+			case 0x0d:
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				if packet.Extended && len(packet.RawData) > baseLength {
+					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
+				}
+			case 0x31:
+				logEntry += fmt.Sprintf("[% 2X]", packet.RawData[:baseLength])
+				if packet.Extended && len(packet.RawData) > baseLength {
+					logEntry += colourBrightWhite + fmt.Sprintf("EXTENDED:[% 2X]", packet.RawData[baseLength:]) + colourReset
+				}
 			default:
-				logEntry += fmt.Sprintf("[% 2X]", packet.RawData)
+				logEntry += colourRed + "(unknown " + fmt.Sprintf("%02X", packet.Type.SubCommand) + " subcommand)" + fmt.Sprintf("[% 2X]", packet.RawData) + colourReset
 			}
 		default:
-			logEntry += "(unknown command group " + fmt.Sprintf("%02X", packet.Type.Command) + ")" + fmt.Sprintf("[% 2X]", packet.RawData)
+			logEntry += colourRed + "(unknown command group " + fmt.Sprintf("%02X", packet.Type.Command) + ")" + fmt.Sprintf("[% 2X]", packet.RawData) + colourReset
 		}
 	}
 

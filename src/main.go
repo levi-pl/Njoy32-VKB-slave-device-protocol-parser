@@ -34,9 +34,9 @@ func main() {
 			check(err)
 			defer logFile.Close()
 			for msg := range serialPacketIn {
-				//if msg.Device.Index == 1 && msg.Type.Command == 0xc8 && msg.Type.SubCommand == 0x0c {
-				displayMessage(&msg, logFile)
-				//}
+				if msg.Device.Index == 1 && msg.Type.Command == 0xc8 && msg.Type.SubCommand == 0x0c {
+					displayMessage(&msg, logFile)
+				}
 			}
 		}()
 		select {}

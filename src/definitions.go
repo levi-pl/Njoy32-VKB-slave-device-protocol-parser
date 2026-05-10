@@ -105,15 +105,20 @@ var vkbMessages = map[int]Njoy32MessageDescriptor{
 	0x013d: {5 + 10, true, "THQ1r"}, // can be 5 bytes longer !!!
 	0x010d: {5 + 10, true, "THQ2r"}, // can be 5 bytes longer !!!
 	0x015d: {5 + 10, true, "THQ3r"}, // can be 5 bytes longer !!!
-	0x0139: {5 + 11, false, "FSMGAr"},
+	0x0139: {5 + 10, true, "FSMGAr"},
+
+	0xa520: {5 + 7, true, "FSM-GA"},
 
 	0xc805: {5 + 4, true, "THQr"},          // can be 5 bytes longer !!!
 	0xc80c: {5 + 16, true, "THQr AXE+BUT"}, // can be 5 bytes longer !!!
 	0xc809: {5 + 13, true, "FSMGAr ENC"},
-	0xc80d: {5 + 17, false, "FSM-GA BUT+ENC"},
+	0xc80d: {5 + 17, true, "FSM-GA BUT+ENC"},
 
-	0x9800: {8 + 4, true, "THQq"},
-	0x9831: {8 + 53, false, "FSMGAq"},
+	0x9800: {8 + 4, true, "THQq00"},
+	0x9805: {8 + 9, true, "FSMGAq05"},
+	0x9809: {8 + 13, true, "FSMGAq0d"},
+	0x980d: {8 + 17, true, "FSMGAq0d"},
+	0x9831: {8 + 53, true, "FSMGAq31"},
 }
 
 var vkbDevices = map[int]Njoy32DeviceDescriptor{
